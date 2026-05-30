@@ -22,4 +22,24 @@ public class PlayerController : MonoBehaviour, IMovementGate
         if (State == next) return; // ignore no-op changes
         State = next;
     }
+
+    // While dialogue is open, lock the player into InEvent so CanMove returns
+    // false and the motor zeroes velocity. Subscribing via events (not direct
+    // calls from the dialogue system) keeps the brain authoritative over its
+    // own state — any future system (cutscene, NPC, chest) that opens dialogue
+    // will lock the player automatically.
+    private void OnEnable()
+    {
+        Dialogue.OnShown  += HandleDialogueShown;
+        Dialogue.OnHidden += HandleDialogueHidden;
+    }
+
+    private void OnDisable()
+    {
+        Dialogue.OnShown  -= HandleDialogueShown;
+        Dialogue.OnHidden -= HandleDialogueHidden;
+    }
+
+    private void HandleDialogueShown(string _) => SetState(PlayerState.InEvent);
+    private void HandleDialogueHidden()        => SetState(PlayerState.Free);
 }
