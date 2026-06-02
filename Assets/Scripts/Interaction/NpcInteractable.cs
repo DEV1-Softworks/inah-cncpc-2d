@@ -13,6 +13,6 @@ public class NpcInteractable : MonoBehaviour, IInteractable
         if (_conversation == null || _conversation.Lines == null || _conversation.Lines.Count == 0)
             return;
 
-        Dialogue.ShowSequence(_conversation.Lines);
+        Dialogue.PlayConversation(_conversation.Lines);
     }
 }

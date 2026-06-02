@@ -10,13 +10,19 @@ public interface IDialogueService
     // One-off caption. Equivalent to ShowSequence with a single unnamed line.
     void Show(string text);
 
-    // Start a sequence. The service holds the list, the current index, AND the
-    // currently-highlighted choice; callers drive playback with Advance() and
-    // (when the current line offers choices) MoveSelection().
+    // Start a paginated sequence. A no-choice line ADVANCES TO THE NEXT INDEX
+    // when the player presses Advance — use this for signs and captions.
     void ShowSequence(IList<DialogueLine> lines);
 
+    // Start a conversation graph. A no-choice line is a LEAF — pressing Advance
+    // on it ENDS the conversation instead of falling through to the next
+    // array index. Use this for NPC dialogues built from a Conversation asset.
+    void PlayConversation(IList<DialogueLine> lines);
+
     // Move to the next line, OR — if the current line has choices and one is
-    // selected — jump to that choice's target. Hides if the sequence ends.
+    // selected — jump to that choice's target. Behavior on a no-choice line
+    // depends on whether playback was started with ShowSequence or
+    // PlayConversation (see above).
     void Advance();
 
     // Navigate up/down through the choices on the current line. No-op when
@@ -68,6 +74,14 @@ public static class Dialogue
         if (Active == null || lines == null || lines.Count == 0) return;
         bool wasShowing = Active.IsShowing;
         Active.ShowSequence(lines);
+        if (!wasShowing && Active.IsShowing) OnShown?.Invoke(lines[0].text);
+    }
+
+    public static void PlayConversation(IList<DialogueLine> lines)
+    {
+        if (Active == null || lines == null || lines.Count == 0) return;
+        bool wasShowing = Active.IsShowing;
+        Active.PlayConversation(lines);
         if (!wasShowing && Active.IsShowing) OnShown?.Invoke(lines[0].text);
     }
 

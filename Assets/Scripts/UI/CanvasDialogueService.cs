@@ -36,9 +36,18 @@ public class CanvasDialogueService : MonoBehaviour, IDialogueService
     [Tooltip("Prefix non-highlighted choices with this (typically spaces to keep alignment).")]
     [SerializeField] private string _unselectedChoicePrefix = "  ";
 
+    // Playback semantics differ between paginated sequences (signs, captions)
+    // and conversation graphs (NPCs):
+    //   Sequence    -> a no-choice line advances to the next index (page flip).
+    //   Conversation-> a no-choice line is a terminal LEAF (the branch ends).
+    // Without this split, a "No-path" terminal line in a conversation would
+    // fall through into a "Yes-path" line that happens to sit next in the array.
+    private enum PlaybackMode { Sequence, Conversation }
+
     private IList<DialogueLine> _sequence;
     private int _index;
     private int _selectedChoice;
+    private PlaybackMode _mode;
 
     public bool IsShowing => _visualRoot != null && _visualRoot.activeSelf;
 
@@ -60,11 +69,18 @@ public class CanvasDialogueService : MonoBehaviour, IDialogueService
     public void Show(string text) => ShowSequence(new[] { new DialogueLine { text = text } });
 
     public void ShowSequence(IList<DialogueLine> lines)
+        => StartPlayback(lines, PlaybackMode.Sequence);
+
+    public void PlayConversation(IList<DialogueLine> lines)
+        => StartPlayback(lines, PlaybackMode.Conversation);
+
+    private void StartPlayback(IList<DialogueLine> lines, PlaybackMode mode)
     {
         if (lines == null || lines.Count == 0) { Hide(); return; }
         _sequence = lines;
         _index = 0;
         _selectedChoice = 0;
+        _mode = mode;
         DisplayCurrent();
         if (_visualRoot       != null) _visualRoot.SetActive(true);
         if (_advanceIndicator != null) _advanceIndicator.SetActive(true);
@@ -77,20 +93,28 @@ public class CanvasDialogueService : MonoBehaviour, IDialogueService
         var line = _sequence[_index];
         if (HasChoices(line))
         {
-            // Confirm the highlighted choice.
+            // Confirm the highlighted choice and jump to its target.
             int target = line.choices[_selectedChoice].targetLine;
             if (target < 0 || target >= _sequence.Count) { Hide(); return; }
             _index = target;
             _selectedChoice = 0;
             DisplayCurrent();
+            return;
         }
-        else
+
+        // No choices: behavior depends on playback mode.
+        if (_mode == PlaybackMode.Conversation)
         {
-            // Linear progression.
-            _index++;
-            if (_index >= _sequence.Count) { Hide(); return; }
-            DisplayCurrent();
+            // Graph traversal: a no-choice line is a leaf. End the branch
+            // instead of falling through to whatever's at index+1.
+            Hide();
+            return;
         }
+
+        // Linear pagination (signs, captions): advance to next page, or close.
+        _index++;
+        if (_index >= _sequence.Count) { Hide(); return; }
+        DisplayCurrent();
     }
 
     public void MoveSelection(int delta)

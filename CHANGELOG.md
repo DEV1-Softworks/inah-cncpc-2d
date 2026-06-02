@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Branching dialogue: `DialogueChoice` struct + new `choices` field on `DialogueLine`. Lines with one or more choices pause the conversation until the player picks; each choice jumps to a `targetLine` index (or ends the conversation when the target is out of range).
 - `IDialogueService.MoveSelection(int delta)` and `IsAwaitingChoice`, plumbed through the static `Dialogue` locator. `Advance()` now confirms the highlighted choice when one is awaited, or proceeds linearly otherwise.
+- `IDialogueService.PlayConversation(lines)` (and the matching `Dialogue.PlayConversation` proxy) — explicit graph-traversal entry point alongside the linear `ShowSequence`. Same data shape, different semantics: in conversation mode a no-choice line ends the branch instead of falling through to the next array index.
 - Choice navigation in `PlayerInteractor`: edge-detected `Move.y` while a choice is awaited (configurable `_choiceNavThreshold`) so holding the stick selects one option per push instead of scrolling at frame rate.
 - `CanvasDialogueService` choices UI: `_choicesPanel` toggleable container + `_choiceTexts` row array, auto-populated with the current line's choices, highlight via configurable `_selectedChoicePrefix` / `_unselectedChoicePrefix`.
 - Speaker name plate on `DialogueUI.prefab`: TMP_Text + sliced background that auto-hides on lines with no speaker, restructured to sit *behind* the main Panel as a Stardew-style tab.
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CanvasDialogueService.Hide()` now explicitly deactivates the speaker plate, advance indicator, and choices panel — needed because they may be siblings of the main visual root (e.g. the speaker tab), so deactivating the Panel alone wouldn't hide them.
 - `m5x7` font asset regenerated with Latin-1 Supplement (previously ASCII-only, causing Spanish characters like `¡`, `¿`, accented vowels and `ñ` to render as missing glyphs).
 - "Two `IInteractable`s on one GameObject" foot-gun documented in `CLAUDE.md` pitfall list (NpcInteractable can be silently shadowed by a leftover TextInteractable; rule: one `IInteractable` per interactable GameObject).
+- Conversation leaf nodes no longer fall through to the next array index. Previously a no-choice "No-path" terminal line could bleed into a "Yes-path" line that happened to sit next in the data; now `NpcInteractable` uses the new `Dialogue.PlayConversation` entry point so the service treats no-choice lines as terminal leaves and ends the branch on Advance.
 
 ## [0.0.2] - Unreleased
 
