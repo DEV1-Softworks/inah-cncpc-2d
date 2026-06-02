@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - Unreleased
+
+### Added
+- Branching dialogue: `DialogueChoice` struct + new `choices` field on `DialogueLine`. Lines with one or more choices pause the conversation until the player picks; each choice jumps to a `targetLine` index (or ends the conversation when the target is out of range).
+- `IDialogueService.MoveSelection(int delta)` and `IsAwaitingChoice`, plumbed through the static `Dialogue` locator. `Advance()` now confirms the highlighted choice when one is awaited, or proceeds linearly otherwise.
+- Choice navigation in `PlayerInteractor`: edge-detected `Move.y` while a choice is awaited (configurable `_choiceNavThreshold`) so holding the stick selects one option per push instead of scrolling at frame rate.
+- `CanvasDialogueService` choices UI: `_choicesPanel` toggleable container + `_choiceTexts` row array, auto-populated with the current line's choices, highlight via configurable `_selectedChoicePrefix` / `_unselectedChoicePrefix`.
+- Speaker name plate on `DialogueUI.prefab`: TMP_Text + sliced background that auto-hides on lines with no speaker, restructured to sit *behind* the main Panel as a Stardew-style tab.
+- ChoicesPanel with 9-sliced background and per-row TMP slots in the dialogue prefab.
+- PixelifySans variable-font TMP font asset, generated with full Latin-1 Supplement (Spanish/French/German accents: `¡¿áéíóúñÁÉÍÓÚÑ` and more).
+- `CLAUDE.md` at the project root — architecture, conventions, and pitfall checklist so any future session bootstraps with the full context.
+- `NICE_TO_HAVE_WISHLIST.md` for post-alpha polish items (first entry: input-aware advance glyph that shows the current device's button: `E` / `A` / `X`).
+
+### Fixed
+- `CanvasDialogueService.Hide()` now explicitly deactivates the speaker plate, advance indicator, and choices panel — needed because they may be siblings of the main visual root (e.g. the speaker tab), so deactivating the Panel alone wouldn't hide them.
+- `m5x7` font asset regenerated with Latin-1 Supplement (previously ASCII-only, causing Spanish characters like `¡`, `¿`, accented vowels and `ñ` to render as missing glyphs).
+- "Two `IInteractable`s on one GameObject" foot-gun documented in `CLAUDE.md` pitfall list (NpcInteractable can be silently shadowed by a leftover TextInteractable; rule: one `IInteractable` per interactable GameObject).
+
 ## [0.0.2] - Unreleased
 
 ### Added
@@ -44,5 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Animator not transitioning (parameter name and Move blend-tree Y-axis mismatch; transitions' Has Exit Time).
 - Water tiles animating out of sync (`AnimatedTile` min/max speed set equal).
 
+[0.0.3]: https://semver.org/
 [0.0.2]: https://semver.org/
 [0.0.1]: https://semver.org/

@@ -1,40 +1,171 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 // Concrete dialogue service that drives the DialogueUI prefab.
 //
 // Goes on the DialogueUI prefab ROOT. Wires:
-//   _visualRoot  -> the Panel GameObject (the visible dialogue box)
-//   _text        -> the TMP_Text child where the message renders
-//
-// Registers itself with the static Dialogue locator in OnEnable, so every
-// interactable in the game can just call Dialogue.Show("...") and reach this.
+//   _visualRoot       -> the Panel GameObject (the visible dialogue box)
+//   _text             -> the body TMP_Text
+//   _speakerText      -> the name TMP_Text (optional)
+//   _speakerPlate     -> the name-plate background GameObject (optional)
+//   _advanceIndicator -> the chevron / "press to continue" glyph (optional)
+//   _choicesPanel     -> container shown when the current line has choices (optional)
+//   _choiceTexts      -> pre-created TMP_Text rows inside _choicesPanel
+//                        (extra slots auto-hide when the current line has
+//                         fewer choices)
 public class CanvasDialogueService : MonoBehaviour, IDialogueService
 {
-    [SerializeField] private GameObject _visualRoot; // the dialogue Panel — toggled on/off
-    [SerializeField] private TMP_Text _text;         // the message renderer inside the panel
+    [Header("Body")]
+    [SerializeField] private GameObject _visualRoot;
+    [SerializeField] private TMP_Text   _text;
+
+    [Header("Speaker plate")]
+    [SerializeField] private TMP_Text   _speakerText;
+    [SerializeField] private GameObject _speakerPlate;
+
+    [Header("Advance indicator")]
+    [SerializeField] private GameObject _advanceIndicator;
+
+    [Header("Choices")]
+    [SerializeField] private GameObject _choicesPanel;
+    [SerializeField] private TMP_Text[] _choiceTexts;
+
+    [Tooltip("Prefix the highlighted choice with this string (e.g. \"> \").")]
+    [SerializeField] private string _selectedChoicePrefix = "> ";
+    [Tooltip("Prefix non-highlighted choices with this (typically spaces to keep alignment).")]
+    [SerializeField] private string _unselectedChoicePrefix = "  ";
+
+    private IList<DialogueLine> _sequence;
+    private int _index;
+    private int _selectedChoice;
 
     public bool IsShowing => _visualRoot != null && _visualRoot.activeSelf;
+
+    public bool IsAwaitingChoice =>
+        IsShowing
+        && _sequence != null
+        && _index < _sequence.Count
+        && HasChoices(_sequence[_index]);
 
     private void OnEnable()
     {
         Dialogue.Register(this);
-        Hide(); // start hidden regardless of how the prefab was authored
+        Hide();
     }
 
-    private void OnDisable()
+    private void OnDisable() => Dialogue.Unregister(this);
+
+    // Single-line callers go through the same sequence playhead.
+    public void Show(string text) => ShowSequence(new[] { new DialogueLine { text = text } });
+
+    public void ShowSequence(IList<DialogueLine> lines)
     {
-        Dialogue.Unregister(this);
+        if (lines == null || lines.Count == 0) { Hide(); return; }
+        _sequence = lines;
+        _index = 0;
+        _selectedChoice = 0;
+        DisplayCurrent();
+        if (_visualRoot       != null) _visualRoot.SetActive(true);
+        if (_advanceIndicator != null) _advanceIndicator.SetActive(true);
     }
 
-    public void Show(string text)
+    public void Advance()
     {
-        if (_text != null) _text.text = text;
-        if (_visualRoot != null) _visualRoot.SetActive(true);
+        if (_sequence == null) return;
+
+        var line = _sequence[_index];
+        if (HasChoices(line))
+        {
+            // Confirm the highlighted choice.
+            int target = line.choices[_selectedChoice].targetLine;
+            if (target < 0 || target >= _sequence.Count) { Hide(); return; }
+            _index = target;
+            _selectedChoice = 0;
+            DisplayCurrent();
+        }
+        else
+        {
+            // Linear progression.
+            _index++;
+            if (_index >= _sequence.Count) { Hide(); return; }
+            DisplayCurrent();
+        }
+    }
+
+    public void MoveSelection(int delta)
+    {
+        if (_sequence == null) return;
+        var line = _sequence[_index];
+        if (!HasChoices(line)) return;
+
+        int n = line.choices.Length;
+        _selectedChoice = ((_selectedChoice + delta) % n + n) % n; // wrap, safe for negative delta
+        RefreshChoiceHighlights();
     }
 
     public void Hide()
     {
-        if (_visualRoot != null) _visualRoot.SetActive(false);
+        _sequence = null;
+        _index = 0;
+        _selectedChoice = 0;
+        if (_visualRoot       != null) _visualRoot.SetActive(false);
+        if (_speakerPlate     != null) _speakerPlate.SetActive(false);
+        if (_advanceIndicator != null) _advanceIndicator.SetActive(false);
+        if (_choicesPanel     != null) _choicesPanel.SetActive(false);
     }
+
+    private void DisplayCurrent()
+    {
+        if (_sequence == null || _index >= _sequence.Count) return;
+        var line = _sequence[_index];
+
+        if (_text != null) _text.text = line.text;
+
+        // Speaker plate: hide whole plate when speaker is empty.
+        bool hasSpeaker = !string.IsNullOrEmpty(line.speaker);
+        if (_speakerText != null) _speakerText.text = line.speaker;
+
+        GameObject speakerToggle = _speakerPlate != null
+            ? _speakerPlate
+            : (_speakerText != null ? _speakerText.gameObject : null);
+        if (speakerToggle != null && speakerToggle.activeSelf != hasSpeaker)
+            speakerToggle.SetActive(hasSpeaker);
+
+        // Choices: populate rows and toggle the panel.
+        bool hasChoices = HasChoices(line);
+        if (_choicesPanel != null && _choicesPanel.activeSelf != hasChoices)
+            _choicesPanel.SetActive(hasChoices);
+
+        if (hasChoices) RefreshChoiceTexts(line);
+    }
+
+    private void RefreshChoiceTexts(DialogueLine line)
+    {
+        if (_choiceTexts == null) return;
+
+        for (int i = 0; i < _choiceTexts.Length; i++)
+        {
+            var slot = _choiceTexts[i];
+            if (slot == null) continue;
+
+            bool inUse = i < line.choices.Length;
+            if (slot.gameObject.activeSelf != inUse) slot.gameObject.SetActive(inUse);
+
+            if (inUse)
+            {
+                string prefix = (i == _selectedChoice) ? _selectedChoicePrefix : _unselectedChoicePrefix;
+                slot.text = prefix + line.choices[i].text;
+            }
+        }
+    }
+
+    private void RefreshChoiceHighlights()
+    {
+        if (_sequence == null) return;
+        RefreshChoiceTexts(_sequence[_index]);
+    }
+
+    private static bool HasChoices(DialogueLine line) =>
+        line.choices != null && line.choices.Length > 0;
 }

@@ -13,8 +13,15 @@ public class PlayerInteractor : MonoBehaviour
 {
     [SerializeField] private MonoBehaviour _inputSource; // must implement IMovementInput
 
+    [Tooltip("Stick / D-pad needs to cross this magnitude to register as a discrete choice nav press.")]
+    [SerializeField] private float _choiceNavThreshold = 0.5f;
+
     private IMovementInput _input;
     private readonly List<IInteractable> _candidates = new();
+
+    // For choice navigation: edge-detect Move.y so holding a direction selects
+    // one option at a time, not "scrolls" the menu at framerate.
+    private float _prevMoveY;
 
     private void Awake()
     {
@@ -40,15 +47,33 @@ public class PlayerInteractor : MonoBehaviour
 
     private void Update()
     {
-        if (_input == null || !_input.InteractPressed) return;
+        if (_input == null) return;
 
-        // Interact button doubles as "close dialogue" while one is open. We do
-        // this here (not in TextInteractable) so every IInteractable stays
-        // ignorant of dialogue state — only the player's interaction loop
-        // knows that pressing Interact during dialogue means "dismiss it."
+        // Choice navigation: while the dialogue is waiting for a pick, treat
+        // vertical Move input as discrete Up/Down keystrokes. Edge-detected
+        // against the previous frame so holding a direction selects exactly
+        // one option per push, not 60 per second.
+        if (Dialogue.IsAwaitingChoice)
+        {
+            float y = _input.Move.y;
+            if (y >  _choiceNavThreshold && _prevMoveY <=  _choiceNavThreshold) Dialogue.MoveSelection(-1); // up
+            if (y < -_choiceNavThreshold && _prevMoveY >= -_choiceNavThreshold) Dialogue.MoveSelection(+1); // down
+            _prevMoveY = y;
+        }
+        else
+        {
+            _prevMoveY = 0f;
+        }
+
+        if (!_input.InteractPressed) return;
+
+        // Interact button doubles as "advance the dialogue" while one is open.
+        // The dialogue service decides what that means in context: confirm the
+        // highlighted choice, show the next page, or auto-close after the last.
+        // Every IInteractable stays ignorant of dialogue state.
         if (Dialogue.IsShowing)
         {
-            Dialogue.Hide();
+            Dialogue.Advance();
             return;
         }
 

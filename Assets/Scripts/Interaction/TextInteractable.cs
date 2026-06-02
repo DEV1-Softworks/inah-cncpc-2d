@@ -1,16 +1,32 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// A signpost / readable object: when interacted with, asks the dialogue
-// service to show a message. Owns its own message per-instance, depends only
-// on the static Dialogue locator — it doesn't know which concrete UI is
-// presenting the text. Replace with NpcInteractable, ChestInteractable, etc.
-// as those systems come online; the player-side code never changes.
+// A signpost / readable world object: when interacted with, plays a sequence
+// of text pages through the dialogue service. Each page is its own "Interact
+// to continue" beat; after the last page the dialogue closes automatically.
+//
+// _speaker is an OPTIONAL title — e.g. a sign about a building can set
+// "Bakery" so the dialogue name-plate reads "Bakery"; leave empty for a plain
+// unnamed sign. Every page uses the same speaker (signs don't switch mid-text).
+//
+// Depends only on the static Dialogue locator — does not know which concrete
+// UI is presenting the text.
 public class TextInteractable : MonoBehaviour, IInteractable
 {
-    [SerializeField, TextArea] private string _message = "Hello.";
+    [SerializeField] private string _speaker = "";
+    [SerializeField, TextArea] private string[] _pages = { "Hello." };
+
+    // Reused list so each Interact() doesn't allocate a fresh DialogueLine[].
+    private readonly List<DialogueLine> _buffer = new();
 
     public void Interact()
     {
-        Dialogue.Show(_message);
+        if (_pages == null || _pages.Length == 0) return;
+
+        _buffer.Clear();
+        for (int i = 0; i < _pages.Length; i++)
+            _buffer.Add(new DialogueLine { speaker = _speaker, text = _pages[i] });
+
+        Dialogue.ShowSequence(_buffer);
     }
 }

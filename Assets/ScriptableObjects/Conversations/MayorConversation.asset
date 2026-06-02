@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d47cd71d3e4104914b444defece8d079, type: 3}
+  m_Name: MayorConversation
+  m_EditorClassIdentifier: Assembly-CSharp::Conversation
+  _lines:
+  - speaker: Alcalde
+    text: "\xA1Hola, amigo! Tenemos un problema en Sac Act\xFAn \xBFQuieres ayudarnos?"
+    choices:
+    - text: "\xA1Claro! \xBFC\xF3mo puedo ayudarte?"
+      targetLine: 1
+    - text: No tengo tiempo ahora.
+      targetLine: 2
+  - speaker: Alcalde
+    text: "\xA1Genial! Estamos conservando nuestro patrimonio subacu\xE1tico, sin
+      embargo, nos hemos quedado sin recursos para investigar. Creo que podr\xEDas
+      ser nuestro benefactor."
+    choices:
+    - text: "\xA1Cuenta con ello!"
+      targetLine: 3
+  - speaker: Alcalde
+    text: Espero lo reconsideres :)
+    choices: []
+  - speaker: Alcalde
+    text: "Gracias, M\xE9xico estar\xE1 muy agradecido contigo."
+    choices: []
