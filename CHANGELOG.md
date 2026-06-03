@@ -26,13 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`IMovementInput.UsePressed` and `DropPressed`** — `PlayerInputReader` backs `UsePressed` with the Attack action (default left mouse / gamepad RT) and `DropPressed` with a direct keyboard read of `Q` (same pragmatic shortcut as the hotbar number keys).
 - **`InventoryDebugLogger`** (temp dev tool) — logs the player's inventory state to the Console on every `OnChanged`. Useful for verifying pickups / drops / transfers without UI noise.
 
+### Changed
+- **Inventory slot prefab consolidated** into a single `Assets/Prefabs/InventorySlot.prefab` with the *correct* internal structure: root has a real background Image (the slot frame, always visible), `Icon` child is sprite-less by default (gets set at runtime by `SetStack`), `Count` child is a `TMP_Text` (auto-hidden when empty or count = 1), and `SelectionHighlight` is a separate overlay GameObject **inactive by default** that toggles on only for the selected slot. All 36 slot instances across `HotbarUI.prefab` (12) and `ChestUI.prefab` (12 chest + 12 player) are now instances of this one prefab — edit the frame once and every slot updates. Replaces the previous "SelectionHighlight doubling as the slot frame" hack and removes the whole class of bugs where touching one slot left the other 35 broken.
+
 ### Fixed
 - `ChestUI.RefreshGrid` no longer force-deactivates each slot's `SelectionHighlight`. The previous "defensive" call was hiding the *entire slot* whenever the slot prefab used the highlight as its de facto background frame (no root Image present). Selection state in the chest UI is now left alone — slots stay visible regardless of how the slot prefab is composed.
 - Clicking a slot in the chest UI no longer also fires `PlayerUseHandler` and consumes one of the clicked item. `PlayerUseHandler` and `PlayerDropHandler` now early-out on `Chests.IsOpen || Dialogue.IsShowing`, mirroring the guard `PlayerInteractor` already had. (Signpost: when a third blocking overlay is introduced, consolidate into a shared `Overlays.AnyOpen` aggregator instead of OR-ing growing lists in each handler.)
+- Slot array fields (`HotbarUI._slots`, `ChestUI._chestSlots`, `ChestUI._playerSlots`) were briefly wired by dragging `InventorySlot.prefab` from the *Project window* — Unity accepts a prefab-asset reference into a `MonoBehaviour[]` field with no warning, producing 12 identical entries that all point at the same prefab-asset component. Re-wired by dragging from the *Hierarchy* (the actual scene instances under each grid). YAML check for future paranoia: each entry should have a unique `fileID` and **no** `guid: ... type: 3` suffix — that suffix is the tell that you dragged from Project instead of Hierarchy.
 
 ### Signposts captured in code
 - `IMovementInput` is no longer strictly "movement" — it now carries `InteractPressed` / `UsePressed` / `DropPressed`. Rename to `IPlayerInput` when the next input pass happens.
-- Slot prefab currently uses `SelectionHighlight` as its frame instead of a real root background Image. Documented inline; the durable fix is one shared `InventorySlot.prefab` with a proper frame + a separate (truly optional) selection overlay.
 - Hotbar number-key reading and Drop key reading both poll `Keyboard.current` directly. When binding becomes a real concern (gamepad / rebinding), move both behind dedicated actions in the Input Actions asset.
 
 ## [0.0.3] - Unreleased

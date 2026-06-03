@@ -181,3 +181,14 @@ next features, in roughly increasing complexity:
   on the body collider; it's a classic confusion with the InteractorZone.
 - **Tilemap edits don't appear in scene file** → the scene wasn't saved.
   Always ⌘S before inspecting YAML.
+- **Every slot in an array shows the same thing at runtime** → the prefab
+  asset was dragged from the *Project window* into a `MonoBehaviour[]` field
+  instead of the scene instances being dragged from the *Hierarchy*. Unity
+  accepts this silently and produces N identical entries that all point at
+  the prefab asset's component. Fix: clear the array, drag the actual scene
+  instances from the Hierarchy. YAML tell: every entry should have a unique
+  `fileID` and **no** `guid: ... type: 3` suffix — that suffix means
+  "Project window drag."
+- **Two `IInteractable` components on one GameObject** → `GetComponent<IInteractable>()`
+  returns only the first, silently shadowing the other. One interactable per
+  GameObject; compose behavior inside a single component if you need both.
