@@ -67,10 +67,21 @@ public class PlayerInteractor : MonoBehaviour
 
         if (!_input.InteractPressed) return;
 
+        // Order matters: when any blocking overlay is up, Interact talks to
+        // *that overlay* (close it / advance it), not to world interactables.
+        //
+        // Chest first: closing a chest is a single action; dialogue is more
+        // nuanced (advance/branch), so we keep the chest check ahead so it
+        // can't accidentally be eaten by a dialogue-checking path.
+        if (Chests.IsOpen)
+        {
+            Chests.Close();
+            return;
+        }
+
         // Interact button doubles as "advance the dialogue" while one is open.
         // The dialogue service decides what that means in context: confirm the
         // highlighted choice, show the next page, or auto-close after the last.
-        // Every IInteractable stays ignorant of dialogue state.
         if (Dialogue.IsShowing)
         {
             Dialogue.Advance();

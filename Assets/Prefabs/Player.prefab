@@ -92,6 +92,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractor
   _inputSource: {fileID: 271441702343529473}
+  _choiceNavThreshold: 0.5
 --- !u!1 &6093018141925134057
 GameObject:
   m_ObjectHideFlags: 0
@@ -110,6 +111,9 @@ GameObject:
   - component: {fileID: 5811816749867576955}
   - component: {fileID: 2234204930841422609}
   - component: {fileID: 8625557894475333071}
+  - component: {fileID: 1593535614104866340}
+  - component: {fileID: 8112969295807633028}
+  - component: {fileID: 1233154748760718279}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -353,3 +357,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationDriver
   _motor: {fileID: 8018538508954328479}
   _animatorSource: {fileID: 2234204930841422609}
+--- !u!114 &1593535614104866340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6093018141925134057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d745d1d517582412a826f3717c800fab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  _capacity: 12
+--- !u!114 &8112969295807633028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6093018141925134057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62e02cc7a1a9f48a08c94804c867ab0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryDebugLogger
+--- !u!114 &1233154748760718279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6093018141925134057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91492872246ad4b76b0c2bab74e31330, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerUseHandler
+  _inputSource: {fileID: 271441702343529473}

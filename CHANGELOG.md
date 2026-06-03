@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - Unreleased
+
+### Added
+- **Inventory data model** — `Item` ScriptableObject (display name, description, icon, max stack, optional `ItemUseBehavior`), `ItemStack` value struct with canonical `Empty`.
+- **`IInventory` contract** + `InventoryBase` abstract MonoBehaviour with the shared slot-array implementation; `PlayerInventory` and `ChestInventory` inherit. `IInventory.TryRemoveFromSlot(slotIndex, count)` for slot-targeted removal (used by chest click-transfer and drop).
+- **`Inventories` static locator** — `Inventories.Player` registers automatically; pickups, hotbar, chest UI, and future shops all reach the player's inventory through it.
+- **`PickupInteractable`** — drop on a world object with a `Collider2D` to make it harvestable; calls `Inventories.Player.TryAdd` on Interact. `Configure(item, count)` runtime setter so a single prefab can be instantiated and parameterized.
+- **`HotbarUI` + `HotbarSlotView`** — row of pre-created slot views, live-updated via `OnChanged`, with `> ` highlight on the selected slot. Number keys 1–9 / 0 / `-` / `=` select slots 0–11.
+- **`IHotbarUI` + `Hotbar` static locator** — `Hotbar.SelectedSlot` exposes the current selection to the player-use code without serialized wiring.
+- **`HotbarSlotView.IPointerClickHandler`** + `OnClicked` event — the hotbar ignores it; the chest UI consumes it for click-to-transfer.
+- **`ChestInteractable`** + `ChestInventory` — each chest GameObject is its own independent storage (`RequireComponent` enforces both on the same GameObject).
+- **`IChestUI` contract + `Chests` static locator** with `OnOpened` / `OnClosed` events fired only on real transitions.
+- **`ChestUI`** — drives a panel with two stacked grids (chest above, player below). Click a slot to transfer its stack to the other side; transfers respect `TryAdd` capacity and remove via `TryRemoveFromSlot`.
+- **Player lock during chest** — `PlayerController` subscribes to `Chests.OnOpened` / `OnClosed` and toggles `PlayerState.InEvent` / `Free` (same pattern as dialogue, so the existing motor gate handles the lock for free).
+- **Interact button closes the chest** — `PlayerInteractor` checks `Chests.IsOpen` before dialogue/interactable routing.
+- **`ItemUseBehavior` (abstract ScriptableObject)** + two concrete starters: `ConsumableUseBehavior` (logs + consumes 1) and `DebugLogUseBehavior` (logs + leaves stack alone). `Item._useBehavior` slot is optional — items without one are silent on Use.
+- **`PlayerUseHandler`** — reads `UsePressed` from the input layer, runs the selected hotbar slot's `ItemUseBehavior`, deducts 1 from the stack if the behavior returns true.
+- **`PlayerDropHandler`** — reads `DropPressed`, instantiates a `DroppedItem` prefab at a configurable offset, calls `PickupInteractable.Configure` with the selected stack's item + count, and empties the slot.
+- **`IMovementInput.UsePressed` and `DropPressed`** — `PlayerInputReader` backs `UsePressed` with the Attack action (default left mouse / gamepad RT) and `DropPressed` with a direct keyboard read of `Q` (same pragmatic shortcut as the hotbar number keys).
+- **`InventoryDebugLogger`** (temp dev tool) — logs the player's inventory state to the Console on every `OnChanged`. Useful for verifying pickups / drops / transfers without UI noise.
+
+### Fixed
+- `ChestUI.RefreshGrid` no longer force-deactivates each slot's `SelectionHighlight`. The previous "defensive" call was hiding the *entire slot* whenever the slot prefab used the highlight as its de facto background frame (no root Image present). Selection state in the chest UI is now left alone — slots stay visible regardless of how the slot prefab is composed.
+- Clicking a slot in the chest UI no longer also fires `PlayerUseHandler` and consumes one of the clicked item. `PlayerUseHandler` and `PlayerDropHandler` now early-out on `Chests.IsOpen || Dialogue.IsShowing`, mirroring the guard `PlayerInteractor` already had. (Signpost: when a third blocking overlay is introduced, consolidate into a shared `Overlays.AnyOpen` aggregator instead of OR-ing growing lists in each handler.)
+
+### Signposts captured in code
+- `IMovementInput` is no longer strictly "movement" — it now carries `InteractPressed` / `UsePressed` / `DropPressed`. Rename to `IPlayerInput` when the next input pass happens.
+- Slot prefab currently uses `SelectionHighlight` as its frame instead of a real root background Image. Documented inline; the durable fix is one shared `InventorySlot.prefab` with a proper frame + a separate (truly optional) selection overlay.
+- Hotbar number-key reading and Drop key reading both poll `Keyboard.current` directly. When binding becomes a real concern (gamepad / rebinding), move both behind dedicated actions in the Input Actions asset.
+
 ## [0.0.3] - Unreleased
 
 ### Added
@@ -64,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Animator not transitioning (parameter name and Move blend-tree Y-axis mismatch; transitions' Has Exit Time).
 - Water tiles animating out of sync (`AnimatedTile` min/max speed set equal).
 
+[0.0.4]: https://semver.org/
 [0.0.3]: https://semver.org/
 [0.0.2]: https://semver.org/
 [0.0.1]: https://semver.org/
