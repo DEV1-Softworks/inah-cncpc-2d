@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 052eaadcaea784321a024293b9390f1e, type: 3}
+  m_Name: ChopTree
+  m_EditorClassIdentifier: Assembly-CSharp::ChopTreeUseBehavior
+  _targetKey: ChoppableTrees
+  _dropItem: {fileID: 11400000, guid: e101108b58d1848859cc1945dce30380, type: 2}
+  _dropCount: 1
+  _dropPrefab: {fileID: 8734548432661396432, guid: 4f70ad22596e24d199ea1adb9dc282ea, type: 3}

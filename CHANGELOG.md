@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - Unreleased
+
+### Added
+- **Tool / world-resource system** — the first real "do something to the world" loop. Composes existing inventory + tilemap + facing primitives; one shared chop behavior runs every tool that damages tiles in front of the player.
+- **`WorldTilemaps` static locator** + **`WorldTilemapRegistrar` component** — each named tilemap (Trees, Walls, Ground, Water, custom layers) registers itself in `OnEnable` so tool behaviors held as ScriptableObjects can reach it without serialized scene refs (which SOs cannot hold).
+- **`PlayerAnimationDriver.Facing` is now public** — same cardinal direction the animator reads; tools query it to know which cell is "in front of the player" even while the player is standing still.
+- **`ChopTreeUseBehavior`** (`ItemUseBehavior` subclass) — on Use, computes the cell one step in `Facing` from the player on the chosen tilemap (`_targetKey`), applies `_damagePerHit`, and on depletion clears the cells + spawns a configurable drop (`_dropItem` × `_dropCount` from `_dropPrefab`). Item is not consumed.
+- **`TilemapResourceHealth` component** (on the resource tilemap) — per-cluster HP tracking. On `Damage(cell, amount)` it flood-fills 4-neighbors from the hit cell to discover the connected resource, keys HP against the cluster's canonical lex-min anchor (so any chop on the same tree damages the same HP), and on depletion returns the whole cluster's cells for the caller to clear. Memory stays small because only damaged clusters are stored.
+- **Required-tool gate on `TilemapResourceHealth`** — `_requiredTool` (Item ref) + `AcceptsTool(item)`. Stardew-style: rocks need a pickaxe, trees need an axe; a wrong tool no-ops cleanly even if it would otherwise hit the right code path.
+- **`ChoppableTrees` tilemap layer** in the scene (decorative `Trees` layer stays untouched). `WorldTilemapRegistrar` publishes it under key `"ChoppableTrees"`; the `AxeChopTree` behavior asset targets that key.
+- **`Axe` Item** + **`Wood` Item** + **`AxeChopTree` `ChopTreeUseBehavior` asset**, wired through `Axe._useBehavior`. Drop is `Wood × 1` using the same `DroppedItem.prefab` `PlayerDropHandler` already uses.
+
+### Signposts captured in code
+- `ChopTreeUseBehavior` is named for trees but is actually a generic "damage the tile in front of me." When the second use case (mining, scything) lands, either reuse this behavior with a different `_targetKey` + tool, or rename to `DamageTileUseBehavior` if the swing styles diverge enough (sounds, particles).
+- Visual mid-chop feedback (damaged-tile sprite swap on each non-fatal hit) is deliberately deferred — the slot to add it is `Damage()` returning `false`: also call `map.SetTile(cell, damagedVariant)`. Skipped until art exists.
+- Tool tiers (better axe → more `_damagePerHit`) are expressible as just different behavior assets today. A more principled "tier" system would attach a level to the *item* and have the behavior read it; not built yet, not needed.
+
 ## [0.0.4] - Unreleased
 
 ### Added
@@ -97,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Animator not transitioning (parameter name and Move blend-tree Y-axis mismatch; transitions' Has Exit Time).
 - Water tiles animating out of sync (`AnimatedTile` min/max speed set equal).
 
+[0.0.5]: https://semver.org/
 [0.0.4]: https://semver.org/
 [0.0.3]: https://semver.org/
 [0.0.2]: https://semver.org/

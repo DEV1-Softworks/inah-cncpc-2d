@@ -12,7 +12,13 @@ public class PlayerAnimationDriver : MonoBehaviour
     [SerializeField] private MonoBehaviour _animatorSource; // must implement ICharacterAnimator
 
     private ICharacterAnimator _view;
-    private Vector2 _facing = Vector2.down; // start facing the camera
+
+    // Cardinal facing direction the player is currently pointing — one of
+    // (1,0), (-1,0), (0,1), (0,-1). Updated whenever the motor's velocity
+    // changes direction, and held constant while idle. Exposed publicly so
+    // tools (axe, watering can, ...) and any other system that needs
+    // "where is the player looking?" can read it without recomputing.
+    public Vector2 Facing { get; private set; } = Vector2.down;
 
     private void Awake()
     {
@@ -35,9 +41,9 @@ public class PlayerAnimationDriver : MonoBehaviour
         // Only update facing WHILE moving, so idle keeps the last direction
         // you walked — that's the core trick behind top-down idle poses.
         if (isMoving)
-            _facing = ToCardinal(velocity);
+            Facing = ToCardinal(velocity);
 
-        _view.SetLocomotion(_facing, isMoving);
+        _view.SetLocomotion(Facing, isMoving);
     }
 
     // Snap any direction to the nearest of 4 cardinals. The art is 4-directional,
