@@ -75,6 +75,85 @@ component would set `_text.text = $"<sprite name=\"{glyphName}\">"`.
 
 ---
 
+## Shop open / close hours driven by GameTime
+
+**What.**
+A shop interactable that is only usable during a configured window (e.g. 08:00
+to 20:00). Outside hours the door shows a "Closed" prompt instead of opening
+the chest/menu.
+
+**Why post-alpha.**
+The clock exists and fires `OnHourChanged` — the rule is trivial to add when
+the first shop NPC arrives. Doing it earlier means inventing a shop with no
+shop content.
+
+**Where.**
+New `ShopInteractable` (implements `IInteractable`). Reads `GameTime.Hour` on
+`Interact()` and either opens the menu or shows a dialogue line.
+
+**Technical sketch.**
+- `[SerializeField] int _opensAt = 8, _closesAt = 20;`
+- `Interact()` checks `GameTime.Hour` against the window; calls
+  `Dialogue.Show("The shop is closed.")` outside it.
+- Optionally subscribes to `GameTime.OnHourChanged` to swap a sprite (open
+  sign vs closed sign) live.
+
+**Estimated effort.** ~45 minutes once the first shop NPC and inventory list
+exist.
+
+---
+
+## NPC daily schedule (phase-driven movement)
+
+**What.**
+An NPC walks between locations as the day progresses (home in the morning,
+shop at midday, pub in the evening, home at night). Schedule data lives on the
+NPC, not in a central timetable.
+
+**Why post-alpha.**
+Needs NPCs and pathfinding first. Once those exist this is a thin layer on
+top of `GameTime.OnPhaseChanged`.
+
+**Where.**
+New `NpcSchedule` component on each NPC. Reads `GameTime.OnPhaseChanged` and
+sets a target waypoint Transform.
+
+**Technical sketch.**
+- `[Serializable] struct Stop { DayPhase phase; Transform location; }`
+- `[SerializeField] Stop[] _stops;`
+- On `OnPhaseChanged(p)` → look up stop → tell the NPC's mover to walk there.
+- Standalone from animation/movement (depends on whatever NPC mover ships).
+
+**Estimated effort.** ~2 hours once NPC movement exists.
+
+---
+
+## Daily crop / world tick on day rollover
+
+**What.**
+Once per in-game day, planted crops advance one growth stage; spawners respawn
+chopped trees; weather rerolls.
+
+**Why post-alpha.**
+Needs crops (planting/growing) and respawner systems first. The trigger itself
+is one event subscription.
+
+**Where.**
+New `WorldDailyTick` MonoBehaviour, lives on a "World" GameObject in the main
+scene.
+
+**Technical sketch.**
+- `OnEnable`: `GameTime.OnDayChanged += HandleNewDay;`
+- `HandleNewDay(int day)`: iterate registered tickables — crops grow, choppable
+  tree clusters consider respawning, etc.
+- Tickables register themselves the same way interactables do (single locator
+  list, no scene-wide singleton lookups).
+
+**Estimated effort.** ~1 hour for the trigger + dispatcher; the per-system
+logic ships with each system it serves.
+
+---
+
 <!--
   Future entries go below, same template:
   ## Title
