@@ -192,3 +192,20 @@ next features, in roughly increasing complexity:
 - **Two `IInteractable` components on one GameObject** → `GetComponent<IInteractable>()`
   returns only the first, silently shadowing the other. One interactable per
   GameObject; compose behavior inside a single component if you need both.
+- **`DoorInteractable` doesn't react to Interact** → its `Collider2D` must be
+  set to **`Is Trigger`**. With a solid collider, the player physically bumps
+  the door, the `PlayerInteractor` doesn't add it to its candidates list, and
+  `Interact()` is never called. The regression is silent — no console log.
+- **Black screen after a scene transition** → something the player needs
+  (`Main Camera`, Cinemachine VCam, `DialogueUI`, `HotbarUI`, `TimeService`)
+  isn't parented under `Persistent`. `DontDestroyOnLoad` only carries the
+  `PersistentRoot` and its children; anything left as a sibling at scene root
+  gets destroyed when the world scene unloads. **Cinemachine is sneaky:** the
+  `Main Camera` (with `CinemachineBrain`) can be inside `Persistent` while the
+  `VirtualCamera` / `CinemachineCamera` itself sits outside — the brain
+  survives, the camera-to-follow doesn't, and the framing breaks silently.
+- **Player lands at the wrong spot after a scene transition** → the
+  `SpawnPoint`'s **global** position is what matters. If the `SpawnPoint` is
+  parented under a GameObject that is not at world origin, the local position
+  shown in the Inspector is misleading. Either un-parent the `SpawnPoint`, or
+  remember that `transform.position` (global) is what `SceneTransition` uses.

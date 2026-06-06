@@ -5,18 +5,27 @@ public class PlayerInputReader : MonoBehaviour, IMovementInput
     private InputSystem_Actions _actions;
     public Vector2 Move => _actions.Player.Move.ReadValue<Vector2>();
     public bool SprintHeld => _actions.Player.Sprint.IsPressed();
-    public bool InteractPressed => _actions.Player.Interact.WasPressedThisFrame();
 
-    // The "Use selected hotbar item" intent. Currently backed by the Attack
-    // action (default binding: left mouse button + gamepad RT), which fits
-    // Stardew-style "click to swing tool / use item."
-    public bool UsePressed     => _actions.Player.Attack.WasPressedThisFrame();
+    // Each "pressed" intent OR-s the action map (keyboard / gamepad) with the
+    // mobile on-screen bus (MobileInput). Either source firing this frame
+    // satisfies the intent; consumers don't need to know where the press came
+    // from.
+    public bool InteractPressed =>
+        _actions.Player.Interact.WasPressedThisFrame() ||
+        MobileInput.InteractPressedThisFrame;
 
-    // "Drop the selected hotbar stack." Direct keyboard read for now (Q key)
-    // — same pragmatic shortcut HotbarUI uses for number-key slot selection.
-    // When the project rebinding pass happens, add a Drop action to the
-    // Input Actions asset and replace this with a generated reader.
-    public bool DropPressed    => UnityEngine.InputSystem.Keyboard.current?.qKey.wasPressedThisFrame ?? false;
+    // The "Use selected hotbar item" intent. Action map side: Attack
+    // (left mouse + gamepad RT). Mobile side: virtual Use button.
+    public bool UsePressed =>
+        _actions.Player.Attack.WasPressedThisFrame() ||
+        MobileInput.UsePressedThisFrame;
+
+    // "Drop the selected hotbar stack." Action map side stays as the direct
+    // Q-key read until the post-jam rebinding pass adds a Drop action to the
+    // Input Actions asset. Mobile side: virtual Drop button.
+    public bool DropPressed =>
+        (UnityEngine.InputSystem.Keyboard.current?.qKey.wasPressedThisFrame ?? false) ||
+        MobileInput.DropPressedThisFrame;
 
     private void Awake()
     {

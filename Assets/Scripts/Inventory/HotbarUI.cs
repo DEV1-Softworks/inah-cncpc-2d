@@ -37,6 +37,17 @@ public class HotbarUI : MonoBehaviour, IHotbarUI
         }
 
         _inv.OnChanged += Refresh;
+
+        // Subscribe to slot clicks so tapping a slot selects it. Works for
+        // mobile touch and for desktop mouse alike — HotbarSlotView already
+        // fires OnClicked via IPointerClickHandler.
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            if (_slots[i] == null) continue;
+            int captured = i; // capture loop var for the lambda
+            _slots[i].OnClicked += _ => SetSelectedSlot(captured);
+        }
+
         Refresh();
         SetSelectedSlot(0); // highlight slot 0 by default
     }
