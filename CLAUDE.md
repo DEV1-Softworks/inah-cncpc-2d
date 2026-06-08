@@ -209,3 +209,15 @@ next features, in roughly increasing complexity:
   parented under a GameObject that is not at world origin, the local position
   shown in the Inspector is misleading. Either un-parent the `SpawnPoint`, or
   remember that `transform.position` (global) is what `SceneTransition` uses.
+- **UI Canvas built manually doesn't receive touch / click** → adding `Canvas`
+  via `Add Component` on an empty GameObject does NOT add a `GraphicRaycaster`.
+  Without it, no child receives pointer events. Either build canvases via
+  `GameObject → UI → Canvas` (auto-adds the raycaster) or remember to
+  `Add Component → Graphic Raycaster` manually. Symptom: `OnScreenStick` /
+  `OnScreenButton` / `IPointerClickHandler` callbacks never fire, silently.
+- **`OnScreenStick` exists, Control Path is correct, but the player doesn't
+  move** → check the RectTransform `Scale` on the stick (and its parent). A
+  Scale of `(0, 0, 0)` from an accidental gizmo drag, or a Scale below `0.5`
+  that shrinks the handle below the pointer's hit area, breaks the
+  pointer-down detection silently. Size vs. Scale are two different rows in
+  the Rect Transform inspector — verify Scale stays at `(1, 1, 1)`.
