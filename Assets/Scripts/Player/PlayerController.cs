@@ -29,18 +29,26 @@ public class PlayerController : MonoBehaviour, IMovementGate
     // authoritative over its own state — no system calls SetState directly.
     private void OnEnable()
     {
-        Dialogue.OnShown  += HandleDialogueShown;
-        Dialogue.OnHidden += HandleOverlayClosed;
-        Chests.OnOpened   += HandleOverlayOpened;
-        Chests.OnClosed   += HandleOverlayClosed;
+        Dialogue.OnShown      += HandleDialogueShown;
+        Dialogue.OnHidden     += HandleOverlayClosed;
+        Chests.OnOpened       += HandleOverlayOpened;
+        Chests.OnClosed       += HandleOverlayClosed;
+        Vendors.OnOpened      += HandleOverlayOpened;
+        Vendors.OnClosed      += HandleOverlayClosed;
+        HireOffices.OnOpened  += HandleOverlayOpened;
+        HireOffices.OnClosed  += HandleOverlayClosed;
     }
 
     private void OnDisable()
     {
-        Dialogue.OnShown  -= HandleDialogueShown;
-        Dialogue.OnHidden -= HandleOverlayClosed;
-        Chests.OnOpened   -= HandleOverlayOpened;
-        Chests.OnClosed   -= HandleOverlayClosed;
+        Dialogue.OnShown      -= HandleDialogueShown;
+        Dialogue.OnHidden     -= HandleOverlayClosed;
+        Chests.OnOpened       -= HandleOverlayOpened;
+        Chests.OnClosed       -= HandleOverlayClosed;
+        Vendors.OnOpened      -= HandleOverlayOpened;
+        Vendors.OnClosed      -= HandleOverlayClosed;
+        HireOffices.OnOpened  -= HandleOverlayOpened;
+        HireOffices.OnClosed  -= HandleOverlayClosed;
     }
 
     // Dialogue passes the first line's text; we ignore it and just lock.

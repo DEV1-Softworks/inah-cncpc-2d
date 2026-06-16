@@ -70,12 +70,24 @@ public class PlayerInteractor : MonoBehaviour
         // Order matters: when any blocking overlay is up, Interact talks to
         // *that overlay* (close it / advance it), not to world interactables.
         //
-        // Chest first: closing a chest is a single action; dialogue is more
-        // nuanced (advance/branch), so we keep the chest check ahead so it
+        // Chest / vendor first: closing them is a single action; dialogue is
+        // more nuanced (advance/branch), so we keep these checks ahead so they
         // can't accidentally be eaten by a dialogue-checking path.
         if (Chests.IsOpen)
         {
             Chests.Close();
+            return;
+        }
+
+        if (Vendors.IsOpen)
+        {
+            Vendors.Close();
+            return;
+        }
+
+        if (HireOffices.IsOpen)
+        {
+            HireOffices.Close();
             return;
         }
 

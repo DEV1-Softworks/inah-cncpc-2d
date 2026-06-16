@@ -31,11 +31,11 @@ public class PlayerUseHandler : MonoBehaviour
     {
         if (_input == null || !_input.UsePressed) return;
 
-        // While a blocking overlay is open (chest, dialogue, future shop /
+        // While a blocking overlay is open (chest, dialogue, vendor, future
         // crafting / menu), the click belongs to that UI — NOT to the world /
-        // hotbar use loop. Skip silently so e.g. clicking a slot in the chest
-        // to transfer it doesn't also consume one of it as a side effect.
-        if (Chests.IsOpen || Dialogue.IsShowing) return;
+        // hotbar use loop. Skip silently so e.g. clicking a slot in the vendor
+        // panel to sell it doesn't also consume one of it as a side effect.
+        if (Chests.IsOpen || Dialogue.IsShowing || Vendors.IsOpen || HireOffices.IsOpen) return;
 
         var inv = Inventories.Player;
         if (inv == null) return;

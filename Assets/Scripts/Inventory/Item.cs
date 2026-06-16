@@ -20,9 +20,18 @@ public class Item : ScriptableObject
     [Tooltip("Optional. Assign an ItemUseBehavior asset to make pressing Use on this item do something. Leave null for purely decorative / collectible items.")]
     [SerializeField] private ItemUseBehavior _useBehavior;
 
+    [Header("Economy")]
+    [Tooltip("How many pesos the player receives per unit when selling this item to a vendor. 0 = not sellable (won't appear in vendor sell panel).")]
+    [SerializeField] private int _sellPrice = 0;
+
+    [Tooltip("How many pesos the player pays per unit to buy this item from a vendor. 0 = not buyable (won't appear in vendor stock).")]
+    [SerializeField] private int _buyPrice = 0;
+
     public string           DisplayName  => _displayName;
     public string           Description  => _description;
     public Sprite           Icon         => _icon;
     public int              MaxStack     => Mathf.Max(1, _maxStack);
     public ItemUseBehavior  UseBehavior  => _useBehavior;
+    public int              SellPrice    => Mathf.Max(0, _sellPrice);
+    public int              BuyPrice     => Mathf.Max(0, _buyPrice);
 }

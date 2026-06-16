@@ -149,6 +149,22 @@ Assets/
   Sprites/Animated stuff/   water_waves, campfire, door
 ```
 
+## Economy (added 0.0.6)
+
+A single-wallet economy. The GDD's Pillar 2 ("el patrimonio se cuida, no se explota") is expressed through **what** the player spends pesos on, not through a separate counter:
+- Spending at the **comerciante** funds personal upgrades (seeds, tools).
+- Spending at the **INAH office** funds the patrimonial work itself (specialists, equipment, supplies). Mechanically still a vendor purchase.
+
+- [Wallet](Assets/Scripts/Economy/IWallet.cs) — interface + static locator. Pesos that the player earns and spends.
+- [PlayerWallet](Assets/Scripts/Economy/PlayerWallet.cs) — concrete; lives on the Player under `Persistent`. Broadcasts current balance in `OnEnable` right after `Register` so HUD listeners aren't sensitive to Unity's OnEnable ordering.
+- [VendorInteractable](Assets/Scripts/Interaction/VendorInteractable.cs) — world-side. Three modes: SellOnly / BuyOnly / Both. Stock = `List<Item>` shown when CanBuy.
+- [VendorUI](Assets/Scripts/Economy/VendorUI.cs) — modal with sell panel (player inventory) + buy panel (vendor stock), live wallet display.
+- [Item.SellPrice / Item.BuyPrice](Assets/Scripts/Inventory/Item.cs) — both default to 0; a zero means "not transactable in that direction."
+
+HUD: [WalletHudView](Assets/Scripts/UI/WalletHudView.cs) under `Persistent`.
+
+The player's overlay system locks movement during any of: dialogue, chest, vendor. Same for `PlayerUseHandler` / `PlayerDropHandler` / `PlayerInteractor` early-outs.
+
 ## History and likely next directions
 
 [CHANGELOG.md](CHANGELOG.md) tracks what's been built and what changed. Likely
@@ -221,3 +237,11 @@ next features, in roughly increasing complexity:
   that shrinks the handle below the pointer's hit area, breaks the
   pointer-down detection silently. Size vs. Scale are two different rows in
   the Rect Transform inspector — verify Scale stays at `(1, 1, 1)`.
+- **Cinemachine camera briefly tilts / rotates on Z during scene transition**
+  → after teleporting the player, the VCam's damping treats the jump as a
+  fast move and interpolates to catch up. Fix: in `SceneTransition`, after
+  setting the new position, call `vcam.OnTargetObjectWarped(target, delta)`
+  on every `CinemachineVirtualCamera`. Already wired in
+  `SceneTransition.TeleportPlayer`; if you add a new VCam, make sure it gets
+  picked up by `FindObjectsByType` (don't disable it or hide it in a way
+  that excludes it from the search).

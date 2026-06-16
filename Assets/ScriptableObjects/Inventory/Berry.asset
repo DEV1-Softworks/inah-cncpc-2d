@@ -17,3 +17,5 @@ MonoBehaviour:
   _icon: {fileID: -345570830, guid: 3321b2870823a4111bf82637f951503f, type: 3}
   _maxStack: 99
   _useBehavior: {fileID: 11400000, guid: 0ed3f553010234e21b0a876984d91187, type: 2}
+  _sellPrice: 5
+  _buyPrice: 8

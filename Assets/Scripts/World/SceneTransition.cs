@@ -1,4 +1,5 @@
 using System.Collections;
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -140,6 +141,9 @@ public class SceneTransition : MonoBehaviour
 
     private static void TeleportPlayer(PlayerController controller, Vector3 worldPos)
     {
+        // Compute the delta BEFORE moving so we can notify Cinemachine vcams.
+        Vector3 delta = worldPos - controller.transform.position;
+
         // Dynamic Rigidbody2D: set rb.position so the physics step doesn't
         // interpolate between the old and new positions (which would draw a
         // brief streak). Setting transform.position too covers the case where
@@ -147,6 +151,14 @@ public class SceneTransition : MonoBehaviour
         var rb = controller.GetComponent<Rigidbody2D>();
         if (rb != null) rb.position = worldPos;
         controller.transform.position = worldPos;
+
+        // Tell every Cinemachine virtual camera that its target just teleported.
+        // Without this the body / aim damping treats the jump as a fast move
+        // and tries to "catch up" with interpolation — producing the brief
+        // skid / Z-rotation tilt visible during the fade-in of a new scene.
+        var vcams = FindObjectsByType<CinemachineVirtualCamera>(FindObjectsSortMode.None);
+        for (int i = 0; i < vcams.Length; i++)
+            vcams[i].OnTargetObjectWarped(controller.transform, delta);
     }
 
     private void BuildFadeCanvas()
