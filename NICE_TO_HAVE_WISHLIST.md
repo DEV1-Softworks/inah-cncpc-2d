@@ -154,6 +154,77 @@ logic ships with each system it serves.
 
 ---
 
+## Quests system
+
+**What.**
+Structured objectives the player can pick up, track on a small HUD, and
+complete to receive a reward — pesos, items, narrative beats, or a new
+expert unlocked in the INAH office. Quests can come from any NPC and chain
+into longer arcs (the arqueóloga asks for ten units of *X*, then for a
+specific item from the cenote area, etc.). A quest log UI lists active and
+completed quests with descriptions and progress.
+
+**Why post-MVP.**
+The jam vertical slice runs on "open-ended exploration + economic loop"
+without explicit objectives — that's coherent with the GDD's Pillar 3
+(*"curiosity as narrative motor"*). Quests are the next step in giving the
+player concrete, satisfying goals, but they require: (a) a quest data
+model, (b) a tracker / log UI, (c) hooks into inventory / dialogue / vendor
+systems to detect completion, (d) per-quest content (givers, copy,
+rewards). The infrastructure is two or three days of work and the content
+production is open-ended. Better to ship the slice without it and add it
+once the narrative voice is consolidated.
+
+**Where.**
+- `Assets/Scripts/Quests/` new folder.
+- A small `IQuestLog` + `QuestLog` static locator, mirroring the
+  established pattern (Wallet, Hotbar, Vendors, HireOffices).
+- `Quest` ScriptableObject as authored data per quest.
+- `QuestGiverInteractable` (or extend `NpcInteractable` to optionally
+  offer a quest after the conversation).
+- `QuestLogUI` HUD widget — collapsed by default, expand on a hotkey.
+
+**Technical sketch.**
+- `Quest` (ScriptableObject) fields:
+  - `string Id`, `string Title`, `string Description`
+  - `QuestObjective[] Objectives` — each is a polymorphic SO subclass
+    (`DeliverItem`, `TalkTo`, `HireExpert`, `ContributeAmount`, etc.) with
+    its own `IsComplete(...)` logic and a `Describe()` method for the log.
+  - `int RewardPesos`, `Item[] RewardItems`, `Conversation OnComplete`.
+- `QuestLog` static:
+  - `Accept(Quest q)`, `Complete(Quest q)`, `Abandon(Quest q)`.
+  - `IsAccepted(string id)`, `IsCompleted(string id)`.
+  - `OnAccepted`, `OnCompleted`, `OnObjectiveProgress` events.
+- Polling vs reactive: each `QuestObjective` decides. `DeliverItem` polls
+  inventory once per second; `HireExpert` subscribes to `HiredExperts.OnHired`;
+  `ContributeAmount` reads `Wallet.OnChanged`.
+- The log UI subscribes to `QuestLog.OnObjectiveProgress` and repaints.
+
+**Estimated effort.** ~12–16 hours for the infrastructure (data model,
+locator, log UI, the first 3 objective subclasses). Per-quest content adds
+on top.
+
+**Acceptance criteria.**
+- An NPC can offer a quest; the player accepts via a dialogue choice.
+- The quest log shows the active quest with its objectives and live
+  progress.
+- Completing the objectives unlocks the "Turn in" dialogue option with the
+  quest giver.
+- Reward is delivered: pesos credited, items added to inventory, optional
+  completion dialogue plays, expert is unlocked, etc.
+- Completing a quest changes how the giver greets the player on subsequent
+  conversations.
+
+**Stretch.**
+- Branching quests (multiple completion paths with different rewards).
+- Failure conditions (time-limited quests; expire at end of day).
+- Hidden quests (only appear after certain world conditions, like
+  contributing N pesos to the INAH office).
+- Companion: a tiny on-screen marker (a `!` over the giver, a `?` over a
+  quest target) that subscribes to the log to reduce navigation friction.
+
+---
+
 <!--
   Future entries go below, same template:
   ## Title

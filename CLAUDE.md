@@ -245,3 +245,30 @@ next features, in roughly increasing complexity:
   `SceneTransition.TeleportPlayer`; if you add a new VCam, make sure it gets
   picked up by `FindObjectsByType` (don't disable it or hide it in a way
   that excludes it from the search).
+- **Vertical scroll list grows bottom-to-top instead of top-to-bottom** →
+  Content RectTransform Pivot Y must be **1** and anchored to top
+  (`AnchorMin (0,1)`, `AnchorMax (1,1)`). `VerticalLayoutGroup.ChildAlignment`
+  must be **Upper Center / Upper Left**. Also disable
+  `ChildForceExpandHeight` — with it on, the layout group fights the
+  ContentSizeFitter and slots compress or distribute unevenly. Unity's UI Y
+  axis goes up like math; without these, the rect grows upward and produces
+  the inverted-list illusion.
+- **Inner UI slot prefab swallows clicks silently** → if the slot prefab has
+  its own `Canvas` (auto-added when reusing certain templates), Unity treats
+  it as an independent raycasting island; the parent Canvas's
+  `GraphicRaycaster` does NOT pass through. Fix: remove the Canvas from the
+  slot prefab (cleanest) or add a `GraphicRaycaster` to that nested Canvas.
+  Same root cause as the `MobileGamepadCanvas` trap.
+- **Button looks fine but click does nothing** → check the Button's `On
+  Click ()` list. If `m_OnClick.m_Calls: []` in YAML, no listener is wired.
+  Unity does NOT warn about empty UnityEvents — they're valid by design.
+  Wire the onClick to a public method on a target component via the
+  Inspector. Verify after duplicating prefabs; sometimes the listener stays
+  but the target reference goes null and the call silently fails.
+- **Slot in a vendor / hire UI shows hardcoded placeholder data instead of
+  ScriptableObject values** → either the script field for that text isn't
+  wired in the prefab (check the Inspector — common when a TMP_Text was
+  added decoratively but never bound to a `_someText` field), or
+  `Bind()` is never called. Diagnose by changing the placeholder text to
+  something distinctive (e.g. `XXX`) and re-running: if `XXX` persists,
+  Bind isn't running; if it changes, the field was just unwired.

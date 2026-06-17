@@ -20,7 +20,11 @@ public class ExpertListItemView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private TMP_Text   _nameText;
     [SerializeField] private TMP_Text   _specialtyText;
     [SerializeField] private TMP_Text   _statusText;
+    [SerializeField] private TMP_Text   _costText;
     [SerializeField] private GameObject _selectedFrame;
+
+    [Tooltip("Format string for the cost in the list. {0} is the amount.")]
+    [SerializeField] private string _costFormat = "${0:N0}";
 
     [SerializeField] private string _statusAvailable = "Disponible";
     [SerializeField] private string _statusHired     = "Contratado";
@@ -42,6 +46,7 @@ public class ExpertListItemView : MonoBehaviour, IPointerClickHandler
 
         if (_nameText      != null) _nameText.text      = expert.DisplayName;
         if (_specialtyText != null) _specialtyText.text = expert.Specialty;
+        if (_costText      != null) _costText.text      = string.Format(_costFormat, expert.HireCost);
 
         RefreshStatus();
     }
@@ -53,6 +58,7 @@ public class ExpertListItemView : MonoBehaviour, IPointerClickHandler
         if (_nameText      != null) _nameText.text     = "";
         if (_specialtyText != null) _specialtyText.text = "";
         if (_statusText    != null) _statusText.text   = "";
+        if (_costText      != null) _costText.text     = "";
         SetSelected(false);
         // Hide the whole row when empty so the list looks clean with fewer
         // specialists than slots.

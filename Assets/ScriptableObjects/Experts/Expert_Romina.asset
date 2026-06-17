@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExpertSpecialist
   _expertId: speleodiver_romina
   _displayName: "Romina V\xE1zquez"
-  _specialty: Espeleobuza
+  _specialty: Espeleobuzo
   _portrait: {fileID: 21300000, guid: 36d380140a5304b36a63e77b238dc830, type: 3}
   _description: "Especialista en arqueolog\xEDa subacu\xE1tica. Diez a\xF1os documentando
     cenotes del sistema Sac Act\xFAn. Su semana de inmersiones documentadas inaugura
