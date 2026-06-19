@@ -5,6 +5,104 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2026-06-18 — Alpha Release
+
+This is the first formal **alpha release**, consolidating all prior iterative work (0.0.1 → 0.0.5) plus the systems built since the tool/world-resource pass. The project also now has a name — **ESTELA** — that frames it as a franchise umbrella with one subtitle per archaeological zone (the first being *Hoyo Negro*). The repo folder (`INAHWithNoName`) stays unchanged to avoid local-path churn; everything user-facing uses ESTELA.
+
+### Title, identity and narrative
+- **Project named *ESTELA*.** Triple-meaning: the protagonist (a young woman called Estela), *stele* (the carved monuments pre-Columbian cultures left behind), and *trail / wake* (what something leaves in passing). The three readings stack across the arc — Estela follows the trail of paleoamerican populations and, by supporting the research, leaves her own.
+- **Protagonist's gender resolved** as a young woman called Estela. This closes the open trait left in §5.2 of the GDD.
+- **GDD (Game Design Document)** authored in two versions: the full edition (~40 pages) and a synthesized 8–10 page edition for institutional delivery. Includes the §2.4 commitments around the cultural treatment of Sac Actún and Hoyo Negro, the Pillar-2 economy framing, and the §9 risk register / cronograma.
+- **Jam deadline tightened from 2026-08-08 to 2026-07-11.** Risk R2 (calendar pressure) escalated; cronograma compressed accordingly.
+
+### Added — Time and day/night
+- **`GameTime` static locator + `ITimeService`** — a single contract anyone in the game uses to read the current day, hour, minute, phase, and `DayProgress01`. Mirrors the Dialogue / Inventories pattern.
+- **`TimeService` MonoBehaviour** — the single concrete clock. Configurable speed (default 1 real second = 1 in-game minute), configurable phase boundaries (Morning / Afternoon / Evening / Night), auto-pause during blocking overlays (so time can't sneak past while a menu is open). Tracks `_totalSeconds` as `double` to avoid float drift in long sessions.
+- **`DayNightLightDriver`** — drives a URP 2D global `Light2D` color + intensity by sampling a Gradient + AnimationCurve at `GameTime.DayProgress01`. Visual day/night without writing per-time-of-day logic.
+- Event surface (`OnDayChanged`, `OnHourChanged`, `OnPhaseChanged`) fires only on real transitions — subscribers (HUD, NPC schedules, shop hours) don't poll.
+
+### Added — Scene transitions and persistence
+- **`SceneTransition` orchestrator** — static `Go(scene, spawnId)` entry point. Lazily self-creates a DDOL GameObject with a fade canvas built programmatically (no scene authoring required). Coroutine: lock player → fade to black → `LoadSceneAsync(Single)` → find `SpawnPoint` → teleport player → fade from black → unlock.
+- **`SpawnPoint` marker component** with a string `_id`. Each inbound door references the spawn id in the destination scene.
+- **`DoorInteractable`** — `IInteractable` that calls `SceneTransition.Go(_targetScene, _targetSpawnId)`. Same component for outbound and return doors.
+- **`PersistentRoot`** + the convention of grouping the Player, Main Camera, Cinemachine VCam, UIs, and `TimeService` under a single `Persistent` GameObject that marks itself `DontDestroyOnLoad`. Includes a duplicate-guard for second loads of the world scene and a `ResetInstance()` static for the title screen flow.
+- **`CameraFollow`** — simple 2D follow camera as a fallback / convenience component (the project ended up on Cinemachine; this stays available for scenes that don't have a VCam).
+- **Editor wizard `Tools → INAH → Create Interior Scene...`** — scaffolds a new interior scene (Grid + Tilemap + arrival SpawnPoint + return DoorInteractable) and adds it to Build Settings in one click.
+
+### Added — Restricted-access interactable
+- **`RestrictedAccessInteractable`** — gates entry behind an authorization flag. Default state plays a "denied" Conversation; a `GrantAccess()` seam allows future story logic to flip on a "granted" Conversation. First use case: the cenote entrance refuses entry to anyone but INAH personnel — turning the GDD's Pillar 2 ("Sac Actún is untouchable") into a moment-to-moment player experience.
+
+### Added — Mobile (Android / iOS / web touch) compatibility
+- **`MobileInput` static one-frame-edge bus** for on-screen taps. `PressInteract` / `PressUse` / `PressDrop` stamp the current `Time.frameCount`; matching `*PressedThisFrame` properties mirror `WasPressedThisFrame` semantics.
+- **`MobileButton` component** — `IPointerDownHandler` on a UI Image, routes the press to the matching `MobileInput` flag (or, for `Pause`, directly to `PauseMenu.Open()`).
+- **`MobileGamepadVisibility`** — drives the on-screen gamepad's `CanvasGroup` (alpha + interactable + blocksRaycasts) based on platform AND pause state. Subscribes to `PauseMenu.OnOpened` / `OnClosed` so the controls hide while the pause UI is up. `_showInEditor` toggle for layout iteration.
+- **`HotbarUI` now listens to slot clicks** via `HotbarSlotView.OnClicked` — tap-to-select for mobile, also works as left-click for desktop.
+- **`PlayerInputReader` OR-s** the action-map intents with `MobileInput` flags, so existing `IMovementInput` consumers (`PlayerInteractor`, `PlayerUseHandler`, `PlayerDropHandler`) work unchanged.
+- Tech-debt signposted: virtual gamepad bypasses the Input Actions asset for `Drop`, `Pause`, and hotbar slot selection. Post-jam rebinding pass will move these into proper actions and delete the `MobileInput` bus.
+
+### Added — Economy: wallet + vendors
+- **`Wallet` static locator + `IWallet`** — pesos: `Add(amount)` always succeeds, `TrySpend(amount)` returns false if insufficient, `OnChanged` fires the new balance.
+- **`PlayerWallet`** concrete component. Lives under Persistent. Broadcasts the current balance in `OnEnable` after `Register`, so HUD listeners that woke up before the wallet initialise correctly (race-resilient).
+- **`Item.SellPrice` and `Item.BuyPrice`** — both default to 0 (a zero in either direction means "not transactable that way"; the vendor UI auto-disables the slot).
+- **`VendorInteractable`** — `IInteractable` with a `VendorMode` (SellOnly / BuyOnly / Both) and a `_stock: List<Item>` for the buy panel. Pattern-locked: the same component runs the *comerciante del pueblo* (Both) and the *Oficina del INAH* desk (BuyOnly).
+- **`IVendorUI` + `Vendors` locator + `VendorSession`** — mirror of the Chests / Dialogue locator shape with `OnOpened` / `OnClosed`.
+- **`VendorUI`** modal — sell panel (player inventory rendered with sell prices) + buy panel (vendor stock with buy prices and affordability tints), live wallet display. Click to sell or buy one unit at a time.
+- **`VendorSlotView`** — reusable slot for both panels. Icon + count + price + disabled tint when not transactable.
+- **`WalletHudView`** — persistent HUD readout. Listens to `Wallet.OnChanged`. Format string configurable.
+
+### Added — INAH office: specialist hiring system
+- The Pillar-2 second basket from the GDD ("supporting the research") rendered as a recruit UI rather than as a separate counter — the player spends pesos at the **Oficina del INAH** like at any vendor, but the items they fund (supply kits, ropes, mapping gear, specialist weeks) are *contributions*, not personal goods.
+- **`ExpertSpecialist` ScriptableObject** — authored data for each hireable specialist: id, display name, specialty, portrait, description, hire cost.
+- **`HiredExperts` static set** — `Hire(expertId)`, `IsHired(expertId)`, `OnHired` event.
+- **`ExpertNpc`** tag component — pinned on the world NPC that should appear once that expert is hired (a stable id matched against `HiredExperts`).
+- **`SceneExpertActivator`** — placed on an always-active container; at scene start activates any child whose expert is already hired, and listens to `OnHired` so a hire during the current session materialises the NPC immediately. The container-as-listener pattern avoids the "script deactivates itself" deadlock.
+- **`HireOfficeInteractable`** — opens the hire modal with a configured roster of `ExpertSpecialist`.
+- **`IHireOfficeUI` + `HireOffices` locator + `HireOfficeSession`** — same shape as `Vendors`.
+- **`HireOfficeUI`** — two-column modal. Left: scrollable list of specialists (each row shows portrait, name, specialty, status badge, cost). Right: detail panel with the selected specialist's portrait, description, and a *Contratar* CTA that grays out when unaffordable or already hired.
+- **`ExpertListItemView`** — selectable row in the left column with `IPointerClickHandler`. Status badge live-updates on `HiredExperts.OnHired`.
+- First expert authored: **Romina Vázquez**, espeleobuza (cost 2000 pesos). Activation flips on a (currently inactive) NPC GameObject in the INAH scene.
+
+### Added — Title screen and pause flow
+- **`TitleScreen.unity`** scene — first scene in Build Settings. Minimal: Camera + Canvas + EventSystem + buttons. Calls into `SceneFlow`.
+- **`TitleScreenUI`** controller — `OnStartClick()` → `SceneFlow.StartNewGame()`, `OnQuitClick()` → `SceneFlow.Quit()`.
+- **`SceneFlow`** static helper — centralises `StartNewGame()`, `ReturnToTitle()`, and `Quit()`. Both navigations destroy the existing `PersistentRoot` and call `PersistentRoot.ResetInstance()` before loading the target, so "Iniciar" always boots a fresh world (no save system yet).
+- **`PauseMenu` static locator + `IPauseMenu`** — same overlay pattern as Vendors / Chests / HireOffices.
+- **`PauseMenuUI`** — Canvas under Persistent. Toggles open/closed on Escape (direct `Keyboard.current` read, signposted for the post-jam rebinding pass). On open: `Time.timeScale = 0` (which auto-pauses `TimeService` because it reads `Time.deltaTime`). Resume / Volver al menú / Salir buttons.
+- **`HideOnWebGL`** component — disables itself when `Application.platform == WebGLPlayer`. Wired on Quit buttons so the WebGL build doesn't show a button that can't function.
+
+### Added — Dialogue / NPC reactivity
+- **`NpcInteractable` extended with first-encounter support** — optional `_firstEncounter` Conversation slot plus a `_conversation` default. First interaction plays first-encounter (if set); subsequent interactions play default. `_hasSpokenBefore` flag flips at the moment of interaction (matches Stardew semantics; resets per session for now — to be serialised when save/load ships).
+- **`NpcInteractable` documentation note**: the in-memory `_hasSpokenBefore` is the first thing to serialise once save/load lands.
+
+### Changed
+- **`PlayerController.OnEnable` / `OnDisable`** now subscribe to all four overlay locators (`Dialogue`, `Chests`, `Vendors`, `HireOffices`, `PauseMenu`) — movement locks for free across every modal.
+- **`PlayerInteractor`** — early-outs on `PauseMenu.IsOpen`, and routes Interact to close the active overlay (Chest / Vendor / HireOffice) before falling through to dialogue / world interaction.
+- **`PlayerUseHandler` and `PlayerDropHandler`** — early-out when *any* of the five blocking overlays is open. (Signpost from 0.0.4 still pending: consolidate into a shared `Overlays.AnyOpen` aggregator.)
+- **`SceneTransition.TeleportPlayer`** — after moving the player, calls `OnTargetObjectWarped(target, delta)` on every `CinemachineVirtualCamera` in the scene. Eliminates the brief Z-axis tilt / skid that damping produced during fade-in of a new scene.
+- **`PersistentRoot.Awake`** — adds explicit error / warning logs when the GameObject isn't a scene root or has no children. Surfaces the most common DDOL configuration mistakes immediately.
+- **`MobileGamepadVisibility`** rewritten to drive a `CanvasGroup` instead of `SetActive`. The previous `SetActive(false)` approach disabled the script's own GameObject, leaving no way to re-show controls after pause closed.
+
+### Documentation
+- **`CLAUDE.md`** kept current across the alpha cycle. Added new sections for the Economy, the title/pause/scene flow, and a substantially expanded pitfall checklist:
+  - `DoorInteractable` needs `Is Trigger`.
+  - Persistent GameObject + Cinemachine VCam parenting under Persistent (otherwise a black-screen-after-transition mystery).
+  - `SpawnPoint` global vs. local position.
+  - Manually-created Canvas missing `GraphicRaycaster` → silent click loss.
+  - `OnScreenStick` with RectTransform Scale (0,0,0) / wrong Pivot / wrong AnchoredPosition.
+  - Cinemachine warp-on-teleport requires `OnTargetObjectWarped`.
+  - Vertical scroll list growing bottom-to-top (Content Pivot Y must be 1).
+  - Inner UI slot prefab carrying its own Canvas without GraphicRaycaster → swallowed clicks.
+  - Empty Button `onClick` list (no warning, silent failure).
+  - Slot in vendor / hire UI showing placeholder data when the script field isn't wired.
+- **`NICE_TO_HAVE_WISHLIST.md`** extended with: shop open / close hours via GameTime, NPC daily schedule (phase-driven movement), daily world tick on day rollover, and the **Quests system** (full proposal with data model, locator, and acceptance criteria).
+
+### Signposts captured in code
+- The five overlay locators (`Dialogue`, `Chests`, `Vendors`, `HireOffices`, `PauseMenu`) all share the same shape. Either keep adding new ones the same way, or — once a sixth ships — extract a shared `Overlays.AnyOpen` / event aggregator and have `PlayerController` and the handlers subscribe to *that* instead of OR-ing growing lists.
+- `MobileInput`, the `Drop` keyboard read, and the hotbar number-key read all bypass the Input Actions asset. The post-jam rebinding pass collapses all three into proper actions.
+- `_hasSpokenBefore` on `NpcInteractable` lives in memory only. First field on the save/load list.
+- `HiredExperts` and `Wallet` likewise — their state is session-only until save/load ships.
+- The cenote's `RestrictedAccessInteractable._granted` slot is the seam for the day the arc unlocks player access. The narrative event that flips it will also be the first use of a future `StoryFlags` / cutscene director.
+
 ## [0.0.5] - Unreleased
 
 ### Added
@@ -114,6 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Animator not transitioning (parameter name and Move blend-tree Y-axis mismatch; transitions' Has Exit Time).
 - Water tiles animating out of sync (`AnimatedTile` min/max speed set equal).
 
+[0.1.0]: https://semver.org/
 [0.0.5]: https://semver.org/
 [0.0.4]: https://semver.org/
 [0.0.3]: https://semver.org/

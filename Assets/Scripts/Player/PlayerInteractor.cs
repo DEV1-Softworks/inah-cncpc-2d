@@ -67,6 +67,10 @@ public class PlayerInteractor : MonoBehaviour
 
         if (!_input.InteractPressed) return;
 
+        // Pause menu owns input entirely while open: don't close it via
+        // Interact (Escape toggles it), and don't propagate to anything else.
+        if (PauseMenu.IsOpen) return;
+
         // Order matters: when any blocking overlay is up, Interact talks to
         // *that overlay* (close it / advance it), not to world interactables.
         //

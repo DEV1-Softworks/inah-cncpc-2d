@@ -42,7 +42,7 @@ public class PlayerDropHandler : MonoBehaviour
         // Same rule as PlayerUseHandler: don't drop while a blocking overlay is
         // active. Q while chest / dialogue / vendor is open should be inert, not
         // throw the player's selected stack onto the ground.
-        if (Chests.IsOpen || Dialogue.IsShowing || Vendors.IsOpen || HireOffices.IsOpen) return;
+        if (Chests.IsOpen || Dialogue.IsShowing || Vendors.IsOpen || HireOffices.IsOpen || PauseMenu.IsOpen) return;
 
         var inv = Inventories.Player;
         if (inv == null) return;

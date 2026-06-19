@@ -37,6 +37,8 @@ public class PlayerController : MonoBehaviour, IMovementGate
         Vendors.OnClosed      += HandleOverlayClosed;
         HireOffices.OnOpened  += HandleOverlayOpened;
         HireOffices.OnClosed  += HandleOverlayClosed;
+        PauseMenu.OnOpened    += HandleOverlayOpened;
+        PauseMenu.OnClosed    += HandleOverlayClosed;
     }
 
     private void OnDisable()
@@ -49,6 +51,8 @@ public class PlayerController : MonoBehaviour, IMovementGate
         Vendors.OnClosed      -= HandleOverlayClosed;
         HireOffices.OnOpened  -= HandleOverlayOpened;
         HireOffices.OnClosed  -= HandleOverlayClosed;
+        PauseMenu.OnOpened    -= HandleOverlayOpened;
+        PauseMenu.OnClosed    -= HandleOverlayClosed;
     }
 
     // Dialogue passes the first line's text; we ignore it and just lock.

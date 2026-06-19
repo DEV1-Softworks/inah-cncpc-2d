@@ -10,7 +10,7 @@ using UnityEngine.EventSystems;
 // behavior. Pointer-up timing would feel laggy.
 public class MobileButton : MonoBehaviour, IPointerDownHandler
 {
-    public enum ButtonAction { Interact, Use, Drop }
+    public enum ButtonAction { Interact, Use, Drop, Pause }
 
     [SerializeField] private ButtonAction _action = ButtonAction.Interact;
 
@@ -21,6 +21,10 @@ public class MobileButton : MonoBehaviour, IPointerDownHandler
             case ButtonAction.Interact: MobileInput.PressInteract(); break;
             case ButtonAction.Use:      MobileInput.PressUse();      break;
             case ButtonAction.Drop:     MobileInput.PressDrop();     break;
+            // Pause talks to PauseMenu directly — there's no per-frame intent
+            // flag because nothing else polls a "pause this frame" signal.
+            // PauseMenu does its own toggle internally; we just open.
+            case ButtonAction.Pause:    PauseMenu.Open();            break;
         }
     }
 }

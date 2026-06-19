@@ -15,6 +15,12 @@ public class PersistentRoot : MonoBehaviour
 {
     private static PersistentRoot _instance;
 
+    // Called by SceneFlow when going back to the title screen (or starting a
+    // new game). The Persistent GameObject itself is destroyed separately;
+    // this clears the static reference so the next load's duplicate-guard
+    // sees "no instance yet" and accepts the new Persistent.
+    public static void ResetInstance() => _instance = null;
+
     private void Awake()
     {
         // Second-load duplicate guard: the world scene file still defines

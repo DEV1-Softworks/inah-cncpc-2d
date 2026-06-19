@@ -1,11 +1,22 @@
-# INAHWithNoName (working title)
+# ESTELA
 
-Unity 2D top-down **Stardew-Valley-like** (farming/life-sim). "INAH" alludes to
-Mexico's Instituto Nacional de Antropología e Historia — likely a
-museum/archaeology theme. **Stealth/disguise/crouch was deliberately cut** as
-out-of-genre (see `[0.0.1] Removed` in [CHANGELOG.md](CHANGELOG.md)). The
-`IMovementGate` plus a new `PlayerState` mode make it cheap to add back if the
-theme ever wants it.
+Unity 2D top-down **Stardew-Valley-like** (farming/life-sim) conceived as a
+**franchise umbrella**: each entry adds a subtitle for a distinct Mexican
+archaeological zone (e.g. `ESTELA: Hoyo Negro`, `ESTELA: Teotihuacán`).
+"Estela" carries a double meaning that anchors the project — *stele* (the
+carved monument cultures leave behind) and *trail / wake* (what something
+leaves in passing). Both readings frame the player's role in the heritage
+work.
+
+The repo folder (`INAHWithNoName`) keeps the original working name to avoid
+churning local paths; the project is *Estela* in everything else (docs,
+title screen, marketing). The first entry is `ESTELA: Hoyo Negro`, anchored
+in the Sac Actún cenote system and the INAH's Hoyo Negro project — see the
+GDD for the cultural framing and the Pillar 2 commitments.
+
+**Stealth/disguise/crouch was deliberately cut** as out-of-genre (see
+`[0.0.1] Removed` in [CHANGELOG.md](CHANGELOG.md)). The `IMovementGate` plus
+a new `PlayerState` mode make it cheap to add back if the theme ever wants it.
 
 ## Stack
 
@@ -164,6 +175,36 @@ A single-wallet economy. The GDD's Pillar 2 ("el patrimonio se cuida, no se expl
 HUD: [WalletHudView](Assets/Scripts/UI/WalletHudView.cs) under `Persistent`.
 
 The player's overlay system locks movement during any of: dialogue, chest, vendor. Same for `PlayerUseHandler` / `PlayerDropHandler` / `PlayerInteractor` early-outs.
+
+## Title screen, pause and scene flow
+
+The game boots into a `TitleScreen` scene (Build index 0). Buttons there call
+into [SceneFlow](Assets/Scripts/World/SceneFlow.cs) which centralises the
+three high-level navigations:
+
+- `SceneFlow.StartNewGame()` — destroys any existing `PersistentRoot`, calls
+  `PersistentRoot.ResetInstance()` to clear the static singleton, and loads
+  `SampleScene` (Single). Acts as "new run" because no save system exists yet.
+- `SceneFlow.ReturnToTitle()` — same teardown, but loads `TitleScreen`.
+  Resets `Time.timeScale` to 1.
+- `SceneFlow.Quit()` — `Application.Quit()` (`EditorApplication.isPlaying = false`
+  in the editor).
+
+During gameplay, [PauseMenuUI](Assets/Scripts/UI/PauseMenuUI.cs) is a Canvas
+under `Persistent` that:
+- Toggles open/closed on Escape (direct `Keyboard.current` read; signposted
+  to move into the action map during post-jam rebinding).
+- Sets `Time.timeScale = 0` while open, which auto-pauses the `TimeService`
+  (it reads `Time.deltaTime`).
+- Registers with the [PauseMenu](Assets/Scripts/UI/IPauseMenu.cs) locator
+  and broadcasts `OnOpened` / `OnClosed`, just like Vendors / Chests /
+  HireOffices.
+- `PlayerController` subscribes to those events and locks player movement;
+  `PlayerUseHandler` / `PlayerDropHandler` / `PlayerInteractor` early-out on
+  `PauseMenu.IsOpen` so input doesn't leak through during pause.
+
+Interior scenes (House, INAH) must be in Build Settings AFTER both
+`TitleScreen` (index 0) and `SampleScene` (index 1).
 
 ## History and likely next directions
 

@@ -35,7 +35,7 @@ public class PlayerUseHandler : MonoBehaviour
         // crafting / menu), the click belongs to that UI — NOT to the world /
         // hotbar use loop. Skip silently so e.g. clicking a slot in the vendor
         // panel to sell it doesn't also consume one of it as a side effect.
-        if (Chests.IsOpen || Dialogue.IsShowing || Vendors.IsOpen || HireOffices.IsOpen) return;
+        if (Chests.IsOpen || Dialogue.IsShowing || Vendors.IsOpen || HireOffices.IsOpen || PauseMenu.IsOpen) return;
 
         var inv = Inventories.Player;
         if (inv == null) return;
